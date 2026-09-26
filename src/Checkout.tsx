@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from './store';
 import { formatNaira } from './data';
+import { supabase } from './lib/supabase';
 
 const NIGERIAN_STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
 
@@ -44,7 +45,19 @@ export default function Checkout() {
       createdAt: new Date().toISOString(),
     };
     try {
-      await new Promise(r => setTimeout(r, 600));
+      if (supabase) {
+        const { error: dbError } = await supabase.from('john_major_orders').insert({
+          order_number: orderId,
+          customer: form,
+          items: cart.map(i => ({ product: i.product, qty: i.qty })),
+          total: cartTotal,
+          payment_status: 'Awaiting Payment',
+          order_status: 'New Order',
+        });
+        if (dbError) throw new Error(dbError.message);
+      } else {
+        await new Promise(r => setTimeout(r, 400));
+      }
       setLastOrder(order);
       clearCart();
       go('confirmation');
